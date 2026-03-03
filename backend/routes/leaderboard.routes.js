@@ -32,7 +32,13 @@ router.get("/top/:k", async (req, res) => {
 router.get("/rank/:user_id", async (req, res) => {
   try {
     const rank = await leaderboard.getRank(req.params.user_id);
-    res.json({ rank });
+  if (rank === null) {
+  return res.status(404).json({
+    message: "Player does not exist"
+  });
+}
+
+res.json({ rank });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

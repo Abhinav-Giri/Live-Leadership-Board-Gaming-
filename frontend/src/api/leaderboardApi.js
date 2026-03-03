@@ -2,25 +2,14 @@ import axios from "axios";
 
 const API_BASE = "http://localhost:5000/leaderboard";
 
-export const seedPlayers = async () => {
-  await axios.post(`${API_BASE}/update`, {
-    user_id: "jack",
-    delta: 500,
-  });
+export const updateScoreAPI = (user_id, delta) =>
+  axios.post(`${API_BASE}/update`, { user_id, delta });
 
-  await axios.post(`${API_BASE}/update`, {
-    user_id: "jill",
-    delta: 50,
-  });
+export const getTopKAPI = (k) =>
+  axios.get(`${API_BASE}/top/${k}`);
 
-  await axios.post(`${API_BASE}/update`, {
-    user_id: "smith",
-    delta: 750,
-  });
-};
+export const getRankAPI = (user_id) =>
+  axios.get(`${API_BASE}/rank/${user_id}`);
 
-export const fetchTopPlayers = async (k) => {
-  const response = await axios.get(`${API_BASE}/top/${k}`);
-  console.log("Fetched top players:", response.data);
-  return response.data;
-};
+export const getRangeAPI = (start, end) =>
+  axios.get(`${API_BASE}/range?start=${start}&end=${end}`);

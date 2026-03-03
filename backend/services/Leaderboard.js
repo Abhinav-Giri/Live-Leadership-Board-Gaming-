@@ -3,13 +3,8 @@ const { redisClient } = require("../config/redis");
 const LEADERBOARD_KEY = "leaderboard";
 
 class LeaderboardService {
-
   async updateScore(user_id, delta) {
-    const newScore = await redisClient.zIncrBy(
-      LEADERBOARD_KEY,
-      delta,
-      user_id
-    );
+    const newScore = await redisClient.zIncrBy(LEADERBOARD_KEY, delta, user_id);
 
     // Clamp negative score to 0
     if (newScore < 0) {
@@ -23,43 +18,41 @@ class LeaderboardService {
     return newScore;
   }
 
- async getTopK(k) {
-  const result = await redisClient.zRangeWithScores(
-    LEADERBOARD_KEY,
-    0,
-    k - 1,
-    { REV: true }
-  );
-
-  console.log("Result:", result);
-
-  return result.map(item => ({
-    user_id: item.value,
-    score: item.score
-  }));
-}
-
-  async getRank(user_id) {
-    const rank = await redisClient.zRevRank(
+  async getTopK(k) {
+    const result = await redisClient.zRangeWithScores(
       LEADERBOARD_KEY,
-      user_id
+      0,
+      k - 1,
+      { REV: true },
     );
 
-    return rank === null ? -1 : rank + 1;
+    return result.map((item, index) => ({
+      rank: index + 1,
+      user_id: item.value,
+      score: item.score,
+    }));
+  }
+
+  async getRank(user_id) {
+    const rank = await redisClient.zRevRank(LEADERBOARD_KEY, user_id);
+
+    if (rank === null) {
+      return null; // Player does not exist
+    }
+
+    return rank + 1;
   }
 
   async getPlayersInRange(start, end) {
-    const result = await redisClient.zRange(
+    const result = await redisClient.zRangeWithScores(
       LEADERBOARD_KEY,
       start - 1,
       end - 1,
-      {
-        REV: true,
-        WITHSCORES: true,
-      }
+      { REV: true },
     );
 
-    return result.map((item) => ({
+    return result.map((item, index) => ({
+      rank: start + index,
       user_id: item.value,
       score: item.score,
     }));

@@ -119,3 +119,5 @@ Redis Sorted Sets:
 
 Abhinav Giri  
 Software Development Engineer
+
+![alt text](image.png)
