@@ -115,8 +115,6 @@ Redis Sorted Sets:
 
 ---
 
-Note: For scale and concurrency, I would use Redis Sorted Sets in production. For deeper control, I would implement an augmented balanced BST storing subtree sizes to enable O(log n) rank queries. For historical queries, I would implement event sourcing with periodic snapshots or persistent data structures.
-
 ## 👨‍💻 Author
 
 Abhinav Giri  
