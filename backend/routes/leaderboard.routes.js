@@ -1,8 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Leaderboard = require("../services/Leaderboard");
-
-const lb = new Leaderboard();
+const leaderboard = require("../services/Leaderboard");
 
 // Seed some data for testing
 lb.update_score("alice", 100);
@@ -10,28 +8,48 @@ lb.update_score("bob", 200);
 lb.update_score("carol", 150);
 
 //Update score
-router.post("/update", (req, res) => {
+router.post("/update", async (req, res) => {
   const { user_id, delta } = req.body;
-  lb.update_score(user_id, delta);
-  res.json({ message: "Score updated" });
+  try {
+    const score = await leaderboard.updateScore(user_id, delta);
+    res.json({ user_id, score });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 //Get top K
-router.get("/top/:k", (req, res) => {
-  const k = parseInt(req.params.k);
-  res.json(lb.get_top_k(k));
+router.get("/top/:k", async (req, res) => {
+  try {
+    const result = await leaderboard.getTopK(parseInt(req.params.k));
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 //Get rank
-router.get("/rank/:user_id", (req, res) => {
-  const rank = lb.get_rank(req.params.user_id);
-  res.json({ rank });
+router.get("/rank/:user_id", async (req, res) => {
+  try {
+    const rank = await leaderboard.getRank(req.params.user_id);
+    res.json({ rank });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 //Get range
-router.get("/range", (req, res) => {
+router.get("/range", async (req, res) => {
   const { start, end } = req.query;
-  res.json(lb.get_players_in_range(Number(start), Number(end)));
+  try {
+    const result = await leaderboard.getPlayersInRange(
+      parseInt(start),
+      parseInt(end),
+    );
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

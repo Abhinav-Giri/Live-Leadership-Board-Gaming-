@@ -1,56 +1,88 @@
-class Leaderboard {
-  constructor() {
-    this.userMap = new Map();
-    this.sorted = [];
-  }
+const { redisClient } = require("../config/redis");
 
-  _compare(a, b) {
-    if (a.score !== b.score) return b.score - a.score;
-    return a.user_id.localeCompare(b.user_id);
-  }
+/**
+ * Leaderboard implemented using Redis Sorted Set.
+ * Key: leaderboard
+ *
+ * Sorted by:
+ *   score ASC internally (Redis default)
+ *   We use ZREVRANGE for descending order
+ */
 
-  _findInsertIndex(player) {
-    let left = 0;
-    let right = this.sorted.length;
+const LEADERBOARD_KEY = "leaderboard";
 
-    while (left < right) {
-      const mid = Math.floor((left + right) / 2);
-      if (this._compare(player, this.sorted[mid]) > 0) {
-        right = mid;
-      } else {
-        left = mid + 1;
-      }
+class LeaderboardService {
+  /**
+   * Update score atomically.
+   * Uses ZINCRBY (atomic in Redis).
+   * O(log n)
+   */
+  async updateScore(user_id, delta) {
+    // Increment score
+    const newScore = await redisClient.zIncrBy(
+      LEADERBOARD_KEY,
+      delta,
+      user_id
+    );
+
+    // Clamp to zero if negative
+    if (newScore < 0) {
+      await redisClient.zAdd(LEADERBOARD_KEY, {
+        score: 0,
+        value: user_id,
+      });
     }
-    return left;
+
+    return Math.max(0, newScore);
   }
 
-  update_score(user_id, delta) {
-    const oldScore = this.userMap.get(user_id) || 0;
-    const newScore = Math.max(0, oldScore + delta);
+  /**
+   * Get top K players
+   * O(log n + k)
+   */
+  async getTopK(k) {
+    const result = await redisClient.zRevRangeWithScores(
+      LEADERBOARD_KEY,
+      0,
+      k - 1
+    );
 
-    this.userMap.set(user_id, newScore);
-
-    // Remove existing
-    this.sorted = this.sorted.filter(p => p.user_id !== user_id);
-
-    const newPlayer = { user_id, score: newScore };
-    const index = this._findInsertIndex(newPlayer);
-
-    this.sorted.splice(index, 0, newPlayer);
+    return result.map((item) => ({
+      user_id: item.value,
+      score: item.score,
+    }));
   }
 
-  get_top_k(k) {
-    return this.sorted.slice(0, k);
+  /**
+   * Get rank (1-based)
+   * O(log n)
+   */
+  async getRank(user_id) {
+    const rank = await redisClient.zRevRank(
+      LEADERBOARD_KEY,
+      user_id
+    );
+
+    if (rank === null) return -1;
+
+    return rank + 1;
   }
 
-  get_rank(user_id) {
-    const index = this.sorted.findIndex(p => p.user_id === user_id);
-    return index === -1 ? -1 : index + 1;
-  }
+  /**
+   * Get players in rank range
+   */
+  async getPlayersInRange(start, end) {
+    const result = await redisClient.zRevRangeWithScores(
+      LEADERBOARD_KEY,
+      start - 1,
+      end - 1
+    );
 
-  get_players_in_range(start, end) {
-    return this.sorted.slice(start - 1, end);
+    return result.map((item) => ({
+      user_id: item.value,
+      score: item.score,
+    }));
   }
 }
 
-module.exports = Leaderboard;
+module.exports = new LeaderboardService();

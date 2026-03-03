@@ -3,43 +3,44 @@ import { useState } from "react";
 
 function App() {
   const [players, setPlayers] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  const fetchTop = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get("http://localhost:5000/leaderboard/top/5");
-      setPlayers(res.data);
-    } catch (err) {
-      console.error("Error fetching leaderboard:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateScore = async () => {
+  const seedData = async () => {
     await axios.post("http://localhost:5000/leaderboard/update", {
       user_id: "alice",
-      delta: 80
+      delta: 100,
     });
-    fetchTop();
+
+    await axios.post("http://localhost:5000/leaderboard/update", {
+      user_id: "bob",
+      delta: 200,
+    });
+
+    await axios.post("http://localhost:5000/leaderboard/update", {
+      user_id: "carol",
+      delta: 150,
+    });
+  };
+
+  const loadTop = async () => {
+    const res = await axios.get(
+      "http://localhost:5000/leaderboard/top/5"
+    );
+    setPlayers(res.data);
   };
 
   return (
-    <div style={{ padding: "40px" }}>
-      <h2>Real-Time Leaderboard</h2>
+    <div style={{ padding: 40 }}>
+      <h2>Production Leaderboard (Redis Powered)</h2>
 
-      <button onClick={fetchTop}>Load Top 5</button>
-      <button onClick={updateScore} style={{ marginLeft: "10px" }}>
-        Add 80 Points to Alice
+      <button onClick={seedData}>Seed Data</button>
+      <button onClick={loadTop} style={{ marginLeft: 10 }}>
+        Load Top 5
       </button>
 
-      {loading && <p>Loading...</p>}
-
       <ul>
-        {players.map((p, index) => (
+        {players.map((p, i) => (
           <li key={p.user_id}>
-            {index + 1}. {p.user_id} - {p.score}
+            {i + 1}. {p.user_id} - {p.score}
           </li>
         ))}
       </ul>

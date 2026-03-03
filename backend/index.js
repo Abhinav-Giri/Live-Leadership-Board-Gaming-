@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const { connectRedis } = require("./config/redis");
 const cors = require("cors");
 const leaderboardRoutes = require("./routes/leaderboard.routes");
 
@@ -9,8 +10,12 @@ app.use(express.json());
 
 app.use("/leaderboard", leaderboardRoutes);
 
-mongoose.connect("mongodb://localhost:27017/leaderboard");
+const startServer = async () => {
+  await connectRedis();
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
-});
+  app.listen(process.env.PORT, () => {
+    console.log(`Server running on port ${process.env.PORT}`);
+  });
+};
+
+startServer();
