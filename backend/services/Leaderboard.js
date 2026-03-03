@@ -1,81 +1,62 @@
 const { redisClient } = require("../config/redis");
 
-/**
- * Leaderboard implemented using Redis Sorted Set.
- * Key: leaderboard
- *
- * Sorted by:
- *   score ASC internally (Redis default)
- *   We use ZREVRANGE for descending order
- */
-
 const LEADERBOARD_KEY = "leaderboard";
 
 class LeaderboardService {
-  /**
-   * Update score atomically.
-   * Uses ZINCRBY (atomic in Redis).
-   * O(log n)
-   */
+
   async updateScore(user_id, delta) {
-    // Increment score
     const newScore = await redisClient.zIncrBy(
       LEADERBOARD_KEY,
       delta,
       user_id
     );
 
-    // Clamp to zero if negative
+    // Clamp negative score to 0
     if (newScore < 0) {
       await redisClient.zAdd(LEADERBOARD_KEY, {
         score: 0,
         value: user_id,
       });
+      return 0;
     }
 
-    return Math.max(0, newScore);
+    return newScore;
   }
 
-  /**
-   * Get top K players
-   * O(log n + k)
-   */
-  async getTopK(k) {
-    const result = await redisClient.zRevRangeWithScores(
-      LEADERBOARD_KEY,
-      0,
-      k - 1
-    );
+ async getTopK(k) {
+  const result = await redisClient.zRangeWithScores(
+    LEADERBOARD_KEY,
+    0,
+    k - 1,
+    { REV: true }
+  );
 
-    return result.map((item) => ({
-      user_id: item.value,
-      score: item.score,
-    }));
-  }
+  console.log("Result:", result);
 
-  /**
-   * Get rank (1-based)
-   * O(log n)
-   */
+  return result.map(item => ({
+    user_id: item.value,
+    score: item.score
+  }));
+}
+
   async getRank(user_id) {
     const rank = await redisClient.zRevRank(
       LEADERBOARD_KEY,
       user_id
     );
 
-    if (rank === null) return -1;
-
-    return rank + 1;
+    return rank === null ? -1 : rank + 1;
   }
 
-  /**
-   * Get players in rank range
-   */
   async getPlayersInRange(start, end) {
-    const result = await redisClient.zRevRangeWithScores(
+    const result = await redisClient.zRange(
       LEADERBOARD_KEY,
       start - 1,
-      end - 1
+      end - 1,
+      {
+        REV: true,
+        WITHSCORES: true,
+      }
     );
 
     return result.map((item) => ({

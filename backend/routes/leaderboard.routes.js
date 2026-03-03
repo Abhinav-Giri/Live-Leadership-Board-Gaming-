@@ -3,9 +3,9 @@ const router = express.Router();
 const leaderboard = require("../services/Leaderboard");
 
 // Seed some data for testing
-lb.update_score("alice", 100);
-lb.update_score("bob", 200);
-lb.update_score("carol", 150);
+// leaderboard.updateScore("alice", 100);
+// leaderboard.updateScore("bob", 200);
+// leaderboard.updateScore("carol", 150);
 
 //Update score
 router.post("/update", async (req, res) => {

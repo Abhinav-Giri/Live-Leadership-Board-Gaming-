@@ -1,51 +1,70 @@
-import axios from "axios";
 import { useState } from "react";
+import Leaderboard from "./components/Leaderboard";
+import Controls from "./components/Controls";
+import { seedPlayers, fetchTopPlayers } from "./api/leaderboardApi";
 
 function App() {
   const [players, setPlayers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const seedData = async () => {
-    await axios.post("http://localhost:5000/leaderboard/update", {
-      user_id: "alice",
-      delta: 100,
-    });
+  const handleSeed = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-    await axios.post("http://localhost:5000/leaderboard/update", {
-      user_id: "bob",
-      delta: 200,
-    });
-
-    await axios.post("http://localhost:5000/leaderboard/update", {
-      user_id: "carol",
-      delta: 150,
-    });
+      await seedPlayers();
+      const data = await fetchTopPlayers(5);
+      setPlayers(data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to seed data");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const loadTop = async () => {
-    const res = await axios.get(
-      "http://localhost:5000/leaderboard/top/5"
-    );
-    setPlayers(res.data);
+  const handleLoad = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await fetchTopPlayers(3);
+      setPlayers(data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch leaderboard");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div style={{ padding: 40 }}>
-      <h2>Production Leaderboard (Redis Powered)</h2>
+    <div style={styles.container}>
+      <h1>🏆 Live Leaderboard</h1>
 
-      <button onClick={seedData}>Seed Data</button>
-      <button onClick={loadTop} style={{ marginLeft: 10 }}>
-        Load Top 5
-      </button>
+      <Controls
+        onSeed={handleSeed}
+        onLoad={handleLoad}
+        loading={loading}
+      />
 
-      <ul>
-        {players.map((p, i) => (
-          <li key={p.user_id}>
-            {i + 1}. {p.user_id} - {p.score}
-          </li>
-        ))}
-      </ul>
+      {loading && <p>Loading...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      <Leaderboard players={players} />
     </div>
   );
 }
+
+const styles = {
+  container: {
+    maxWidth: "600px",
+    margin: "50px auto",
+    padding: "20px",
+    textAlign: "center",
+    fontFamily: "Arial",
+  },
+};
 
 export default App;
