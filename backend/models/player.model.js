@@ -1,6 +1,6 @@
-// Leaderboard ranking is handled in-memory.
 const mongoose = require("mongoose");
 
+//schema for player with user_id and score
 const playerSchema = new mongoose.Schema({
   user_id: {
     type: String,

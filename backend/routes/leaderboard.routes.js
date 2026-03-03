@@ -4,34 +4,31 @@ const Leaderboard = require("../services/Leaderboard");
 
 const lb = new Leaderboard();
 
-/**
- * Update score
- */
+// Seed some data for testing
+lb.update_score("alice", 100);
+lb.update_score("bob", 200);
+lb.update_score("carol", 150);
+
+//Update score
 router.post("/update", (req, res) => {
   const { user_id, delta } = req.body;
   lb.update_score(user_id, delta);
   res.json({ message: "Score updated" });
 });
 
-/**
- * Get top K
- */
+//Get top K
 router.get("/top/:k", (req, res) => {
   const k = parseInt(req.params.k);
   res.json(lb.get_top_k(k));
 });
 
-/**
- * Get rank
- */
+//Get rank
 router.get("/rank/:user_id", (req, res) => {
   const rank = lb.get_rank(req.params.user_id);
   res.json({ rank });
 });
 
-/**
- * Get range
- */
+//Get range
 router.get("/range", (req, res) => {
   const { start, end } = req.query;
   res.json(lb.get_players_in_range(Number(start), Number(end)));
