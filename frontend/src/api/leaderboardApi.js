@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000/leaderboard";
+const API_BASE = "https://live-leadership-board-gaming.onrender.com/leaderboard";
 
 export const updateScoreAPI = (user_id, delta) =>
   axios.post(`${API_BASE}/update`, { user_id, delta });
